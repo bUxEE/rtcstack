@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>RTCstack Vanilla Example</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; background: #0f0f0f; color: #f5f5f5; font-family: system-ui; }
+
+      #join-screen {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 100vh; gap: 16px;
+      }
+      #join-screen h1 { font-size: 28px; font-weight: 700; }
+      #join-screen p { color: #999; }
+      .form { display: flex; flex-direction: column; gap: 8px; width: 300px; }
+      .form input, .form select {
+        padding: 10px 12px; background: #1a1a1a; border: 1px solid #333;
+        border-radius: 8px; color: #f5f5f5; font-size: 14px;
+      }
+      .form button {
+        padding: 12px; background: #4f9cf9; color: #fff; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;
+      }
+      .form button:disabled { opacity: 0.5; cursor: default; }
+      #error { color: #e74c3c; font-size: 14px; }
+      #call-screen { height: 100vh; display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="join-screen">
+      <h1>RTCstack</h1>
+      <p>Vanilla Example — drop-in video call</p>
+      <div class="form">
+        <input id="room-id" type="text" value="test-room" placeholder="Room ID" />
+        <input id="name" type="text" value="Alice" placeholder="Your name" />
+        <select id="role">
+          <option value="host">Host</option>
+          <option value="moderator">Moderator</option>
+          <option value="participant">Participant</option>
+          <option value="viewer">Viewer (listen only)</option>
+        </select>
+        <button id="join-btn">Join Call</button>
+        <p id="error"></p>
+      </div>
+    </div>
+    <div id="call-screen"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

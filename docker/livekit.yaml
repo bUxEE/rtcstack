@@ -1,0 +1,24 @@
+port: 7880
+log_level: info
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 3250
+  port_range_end: 3260
+  # Don't auto-detect external IP; node IP is injected via NODE_IP env var.
+  # Local Docker Desktop: NODE_IP=127.0.0.1 (ports mapped to localhost)
+  # Production VPS:       NODE_IP=<your public IP>
+  use_external_ip: false
+
+# keys and redis credentials are injected via environment variables:
+#   LIVEKIT_KEYS         → "<API_KEY>: <API_SECRET>"
+#   LIVEKIT_REDIS_ADDRESS / LIVEKIT_REDIS_PASSWORD
+redis:
+  address: redis:6379
+
+turn:
+  enabled: false
+  domain: localhost
+  tls_port: 3245
+  udp_port: 3244
+  external_tls: false

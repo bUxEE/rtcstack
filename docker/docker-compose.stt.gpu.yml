@@ -1,0 +1,28 @@
+# GPU override — apply on top of docker-compose.stt.yml (or docker-compose.yml)
+#
+# Requires: nvidia-container-toolkit installed on the host
+# Install: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+#
+# Usage (standalone STT machine):
+#   docker compose -f docker-compose.stt.yml -f docker-compose.stt.gpu.yml --env-file .env.stt up -d
+#
+# Usage (full stack with GPU whisper):
+#   docker compose -f docker-compose.yml -f docker-compose.stt.gpu.yml --profile stt-post --profile stt-live up -d
+#
+# Set these in your .env or .env.stt when using GPU:
+#   WHISPER_MODEL=large-v3        # or medium, small
+#   WHISPER_DEVICE=cuda
+#   WHISPER_COMPUTE_TYPE=float16  # float16 is fastest on GPU
+
+services:
+  whisper:
+    environment:
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-float16}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.turbo/
+*.env
+!*.env.example
+.DS_Store
+Thumbs.db
+*.log
+.pnpm-store/
+coverage/
+.nyc_output/

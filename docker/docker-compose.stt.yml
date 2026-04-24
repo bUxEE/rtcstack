@@ -1,0 +1,92 @@
+# RTCstack — STT-only deployment
+#
+# Use this file on a dedicated machine (e.g., a GPU box) when you want to run
+# the Whisper engine and STT workers separately from the main stack.
+#
+# Prerequisites on the STT machine:
+#   - Docker + Docker Compose v2
+#   - Network access to the main stack's Redis and MinIO (see SECURITY below)
+#   - (optional) NVIDIA GPU + nvidia-container-toolkit for GPU acceleration
+#
+# SECURITY — Redis and MinIO must NOT be exposed on a public IP without
+# encryption. Use one of:
+#   - WireGuard / Tailscale VPN between the machines (recommended)
+#   - SSH tunnel: ssh -L 6379:localhost:6379 -L 9000:localhost:9000 user@main-host
+#   - Private VLAN / cloud VPC with security groups
+# Never expose bare Redis or MinIO on 0.0.0.0 on a public machine.
+#
+# Usage:
+#   cp .env.stt.example .env.stt
+#   # edit .env.stt with your values
+#   docker compose -f docker-compose.stt.yml --env-file .env.stt up -d
+#
+# To include GPU support, also pass:
+#   docker compose -f docker-compose.stt.yml -f docker-compose.stt.gpu.yml --env-file .env.stt up -d
+
+name: rtcstack-stt
+
+services:
+  whisper:
+    build:
+      context: ../services/whisper
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+      WHISPER_LANGUAGE: ${STT_LANGUAGE:-auto}
+    volumes:
+      - whisper_models:/home/whisper/.cache/huggingface
+    ports:
+      - "${PORT_WHISPER:-3281}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  stt-worker:
+    build:
+      context: ../services/stt-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      REDIS_URL: ${REDIS_URL}
+      WHISPER_URL: http://whisper:8080
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ACCESS_KEY: ${AWS_ACCESS_KEY_ID}
+      MINIO_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-rtcstack-recordings}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      STT_QUEUE_KEY: stt:queue
+      STT_LANGUAGE: ${STT_LANGUAGE:-en}
+    depends_on:
+      whisper:
+        condition: service_healthy
+
+  stt-live-agent:
+    build:
+      context: ../services/stt-live
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      WHISPER_URL: http://whisper:8080
+      STT_LANGUAGE: ${STT_LANGUAGE:-en}
+      PAUSE_THRESHOLD_SECONDS: ${PAUSE_THRESHOLD_SECONDS:-1.5}
+      SHORT_PAUSE_SECONDS: ${SHORT_PAUSE_SECONDS:-0.3}
+      MAX_CHUNK_SECONDS: ${MAX_CHUNK_SECONDS:-30.0}
+      SPEECH_RMS_THRESHOLD: ${SPEECH_RMS_THRESHOLD:-200}
+      WHISPER_MAX_CONCURRENT: ${WHISPER_MAX_CONCURRENT:-2}
+    depends_on:
+      whisper:
+        condition: service_healthy
+
+volumes:
+  whisper_models:

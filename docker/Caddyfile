@@ -1,0 +1,34 @@
+(cors_api) {
+  header Access-Control-Allow-Origin *
+  header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  header Access-Control-Allow-Headers "Content-Type, X-Api-Key, X-RTCstack-Timestamp, X-RTCstack-Signature"
+  @preflight method OPTIONS
+  respond @preflight 204
+}
+
+# HTTPS — production and local dev via self-signed cert
+{$DOMAIN} {
+  # TLS behaviour:
+  # - localhost / *.local → Caddy auto-issues a self-signed internal cert (no email needed)
+  # - real domain         → set CADDY_TLS_MODE to a real email; Caddy uses Let's Encrypt
+  tls {$CADDY_TLS_MODE}
+
+  # LiveKit WebSocket signaling
+  reverse_proxy /livekit/* livekit:7880 {
+    header_up Host {upstream_hostport}
+  }
+
+  # RTCstack REST API
+  handle /v1/* {
+    import cors_api
+    reverse_proxy api:{$API_PORT}
+  }
+}
+
+# HTTP — playground / local dev (no TLS, no redirect)
+http://{$DOMAIN} {
+  handle /v1/* {
+    import cors_api
+    reverse_proxy api:{$API_PORT}
+  }
+}

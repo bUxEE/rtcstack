@@ -1,0 +1,12 @@
+{
+  "name": "@rtcstack/playground",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "vite": "^5.0.0"
+  }
+}
